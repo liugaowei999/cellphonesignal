@@ -21,6 +21,30 @@ public class LoadConfigure {
 	//任务列表
 	private List<TaskInfo> taskList = new ArrayList<TaskInfo>();
 
+	// 输出目录
+	private String outPutPath;
+
+	// 输出文件前缀
+	private String outputFilePre;
+
+	// 输出文件后缀
+	private String outputFileSub;
+
+	// 临时目录
+	private String tmpPath;
+
+	// 临时文件前缀
+	private String tmpFilePre;
+
+	// 临时文件后缀
+	private String tmpFileSub;
+
+	// 备份目录
+	private String bakPath;
+
+	// 是否压缩
+	private boolean isCompress;
+
 	// 任务配置域名称正则表达式
 	private static final String TASK_SECTION_NAME_REG = "^TASK_.*";
 
@@ -38,12 +62,25 @@ public class LoadConfigure {
 		String loggerPath = reader.getValue("LOGGER", "logPath").trim();
 		System.out.println("loggerPath=" + loggerPath);
 
+		setOutPutPath(reader.getValue("OUTPUT", "outputpath").trim());
+		setOutputFilePre(reader.getValue("OUTPUT", "outputFilePre").trim());
+		setOutputFileSub(reader.getValue("OUTPUT", "outputFileSub").trim());
+
+		setTmpPath(reader.getValue("TMP", "tmppath").trim());
+		setTmpFilePre(reader.getValue("TMP", "tmpFilePre").trim());
+		setTmpFileSub(reader.getValue("TMP", "tmpFileSub").trim());
+
+		setBakPath(reader.getValue("BACKUP", "bakpath").trim());
+		setCompress(CastUtil
+				.castBoolean(CastUtil.castInt(reader.getValue("BACKUP", "bakpath").trim()) > 0 ? "true" : "false"));
+
 		List<String> sections = reader.getSectionList(TASK_SECTION_NAME_REG);
 		for (String section : sections) {
+			String recordType = reader.getValue(section, "recordType").trim();
 			String oriPath = reader.getValue(section, "oripath").trim();
 			String oriFileMatcher = reader.getValue(section, "fileMatcher").trim();
 			short orderFieldIndex = CastUtil.castShort(reader.getValue(section, "orderFieldIndex").trim());
-			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, orderFieldIndex);
+			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, orderFieldIndex, recordType);
 			taskList.add(taskInfo);
 		}
 	}
@@ -97,5 +134,81 @@ public class LoadConfigure {
 	 */
 	public List<TaskInfo> getTaskList() {
 		return taskList;
+	}
+
+	public String getOutPutPath() {
+		return outPutPath;
+	}
+
+	public void setOutPutPath(String outPutPath) {
+		if (!outPutPath.endsWith(File.separator)) {
+			this.outPutPath = outPutPath + File.separator;
+		} else {
+			this.outPutPath = outPutPath;
+		}
+	}
+
+	public String getOutputFilePre() {
+		return outputFilePre;
+	}
+
+	public void setOutputFilePre(String outputFilePre) {
+		this.outputFilePre = outputFilePre;
+	}
+
+	public String getOutputFileSub() {
+		return outputFileSub;
+	}
+
+	public void setOutputFileSub(String outputFileSub) {
+		this.outputFileSub = outputFileSub;
+	}
+
+	public String getTmpPath() {
+		return tmpPath;
+	}
+
+	public void setTmpPath(String tmpPath) {
+		if (!tmpPath.endsWith(File.separator)) {
+			this.tmpPath = tmpPath + File.separator;
+		} else {
+			this.tmpPath = tmpPath;
+		}
+	}
+
+	public String getTmpFilePre() {
+		return tmpFilePre;
+	}
+
+	public void setTmpFilePre(String tmpFilePre) {
+		this.tmpFilePre = tmpFilePre;
+	}
+
+	public String getTmpFileSub() {
+		return tmpFileSub;
+	}
+
+	public void setTmpFileSub(String tmpFileSub) {
+		this.tmpFileSub = tmpFileSub;
+	}
+
+	public String getBakPath() {
+		return bakPath;
+	}
+
+	public void setBakPath(String bakPath) {
+		if (!bakPath.endsWith(File.separator)) {
+			this.bakPath = bakPath + File.separator;
+		} else {
+			this.bakPath = bakPath;
+		}
+	}
+
+	public boolean isCompress() {
+		return isCompress;
+	}
+
+	public void setCompress(boolean isCompress) {
+		this.isCompress = isCompress;
 	}
 }

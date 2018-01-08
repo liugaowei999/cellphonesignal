@@ -3,6 +3,8 @@ package com.cttic.cell.phone.signal.tasks;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +18,7 @@ import java.util.regex.PatternSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cttic.cell.phone.signal.configure.LoadConfigure;
 import com.cttic.cell.phone.signal.pojo.CellPhoneSignal;
 import com.cttic.cell.phone.signal.pojo.CellPhoneSignalList;
 import com.cttic.cell.phone.signal.pojo.TaskInfo;
@@ -26,20 +29,25 @@ import com.cttic.cell.phone.signal.utils.zip.FileUtil;
 public class DataConvertTask implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataConvertTask.class);
 
+	// 配置信息
+	LoadConfigure configure;
+
 	private boolean isStop;
 
 	// 处理文件目录
 	private List<TaskInfo> taskInfos;
 
-	// 所有记录
-	//	private List<CellPhoneSignalList> recordList;
-
 	// 记录所有的partition信息
 	private HashMap<Long, CellPhoneSignalList> recordMap;
 
-	public DataConvertTask(List<TaskInfo> taskInfos) {
+	public DataConvertTask(LoadConfigure configure) {
+		this.configure = configure;
+		List<TaskInfo> taskInfos = this.configure.getTaskList();
 		this.taskInfos = taskInfos;
 	}
+
+
+
 
 	/**
 	 * 获取一个文件夹以及其子文件夹下的所有的文件
@@ -90,7 +98,13 @@ public class DataConvertTask implements Runnable {
 				}
 
 				// 写出当前批次的所有记录 并 排序
-				writeRecordsToFile(recordMap);
+				try {
+					writeRecordsToFile(recordMap);
+				} catch (IOException e) {
+					LOGGER.error("write the records to the file failure!", e);
+					isStop = true;
+				}
+				backupAllFiles(allFiles);
 			}
 
 			try {
@@ -103,7 +117,26 @@ public class DataConvertTask implements Runnable {
 		}
 	}
 
-	private void writeRecordsToFile(HashMap<Long, CellPhoneSignalList> recordMap) {
+	private void backupAllFiles(Map<TaskInfo, List<File>> allFiles) {
+		// 遍历所有文件列表
+		for (Map.Entry<TaskInfo, List<File>> entry : allFiles.entrySet()) {
+			List<File> value = entry.getValue();
+			for (File file : value) {
+				String bakfilepath = configure.getBakPath() + file.getName();
+				if (file.renameTo(new File(bakfilepath))) {
+					LOGGER.debug("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] success.");
+				} else {
+					LOGGER.error("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] failure.");
+				}
+				if (!configure.isCompress()) {
+					System.out.println("compress ........");
+					FileUtil.compress(new File(bakfilepath));
+				}
+			}
+		}
+	}
+
+	private void writeRecordsToFile(HashMap<Long, CellPhoneSignalList> recordMap) throws IOException {
 		// HashMap 排序
 		List<Map.Entry<Long, CellPhoneSignalList>> infoIds = new ArrayList<Map.Entry<Long, CellPhoneSignalList>>(
 				recordMap.entrySet());
@@ -123,10 +156,31 @@ public class DataConvertTask implements Runnable {
 			}
 		});
 
-		//		System.out.println("============================= 排序后：");
+		System.out.println("============================= 排序后：");
+		FileWriter fw = null;
+		String fileNameBody = Thread.currentThread().getId() + "_" + System.currentTimeMillis();
+		String tmpFilePath = configure.getTmpPath() + configure.getTmpFilePre() + fileNameBody
+				+ configure.getTmpFileSub();
+		String outputFilePath = configure.getOutPutPath() + configure.getOutputFilePre() + fileNameBody
+				+ configure.getOutputFileSub();
+		if (CollectionUtil.isNotEmpty(infoIds)) {
+			fw = new FileWriter(tmpFilePath);
+		}
 		for (Entry<Long, CellPhoneSignalList> entry : infoIds) {
-			//			System.out.println(entry.getKey());
+			System.out.println(entry.getKey());
+			CellPhoneSignalList recordList = entry.getValue();
+			recordList.writeToFile(fw);
+		}
+		fw.flush();
+		fw.close();
 
+		// 移到正式目录下
+		System.out.println("rename to out path");
+		File file = new File(tmpFilePath);
+		if (file.renameTo(new File(outputFilePath))) {
+			LOGGER.debug("File:[" + tmpFilePath + "] rename to [" + outputFilePath + "] success.");
+		} else {
+			LOGGER.error("File:[" + tmpFilePath + "] rename to [" + outputFilePath + "] failure.");
 		}
 	}
 
@@ -156,7 +210,7 @@ public class DataConvertTask implements Runnable {
 			String line = null;
 			while ((line = bufferedReader.readLine()) != null) {
 				String[] sortValues = formatTimeStr(line.split(",")[sortFieldIndex]);
-				intsertToContainer(sortValues, line);
+				intsertToContainer(sortValues, taskInfo.getRecordType() + "," + line);
 			}
 		} catch (Exception e) {
 			LOGGER.error("Process file=[" + f.getAbsolutePath() + "] error!", e);

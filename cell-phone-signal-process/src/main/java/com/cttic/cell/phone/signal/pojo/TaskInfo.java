@@ -4,11 +4,13 @@ public class TaskInfo {
 	private String oriPath;
 	private String oriFileMatcher;
 	private short orderFieldIndex;
+	private String recordType;
 
-	public TaskInfo(String oriPath, String oriFileMatcher, short orderFieldIndex) {
+	public TaskInfo(String oriPath, String oriFileMatcher, short orderFieldIndex, String recordType) {
 		this.oriPath = oriPath;
 		this.oriFileMatcher = oriFileMatcher;
 		this.orderFieldIndex = orderFieldIndex;
+		this.recordType = recordType;
 	}
 
 	public String getOriPath() {
@@ -35,4 +37,11 @@ public class TaskInfo {
 		this.orderFieldIndex = orderFieldIndex;
 	}
 
+	public String getRecordType() {
+		return recordType;
+	}
+
+	public void setRecordType(String recordType) {
+		this.recordType = recordType;
+	}
 }

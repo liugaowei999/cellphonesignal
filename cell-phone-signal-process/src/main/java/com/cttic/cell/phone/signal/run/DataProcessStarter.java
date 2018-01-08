@@ -13,7 +13,7 @@ public class DataProcessStarter {
 	public static void main(String[] args) {
 		try {
 			LoadConfigure configure = LoadConfigure.getInstance(DEFAULT_CONFIG);
-			DataConvertTask dataConvertTask = new DataConvertTask(configure.getTaskList());
+			DataConvertTask dataConvertTask = new DataConvertTask(configure);
 			Thread taskThread = new Thread(dataConvertTask, "DataConvertTask-thread");
 			taskThread.start();
 
