@@ -6,6 +6,8 @@ public interface IKafkaProducer {
 
 	public void send(String message);
 
+	//	public void send(KeyedMessage<String, byte[]> km);
+
 	public void start();
 
 	public void disConnect();

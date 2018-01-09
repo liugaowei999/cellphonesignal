@@ -24,6 +24,7 @@ public class GenericKafkaProducer implements IKafkaProducer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(GenericKafkaProducer.class);
 
 	Producer<String, String> producer;
+	//	Producer<String[], String[]> producerBatcher;
 	private String topicnames;
 	private AtomicLong lMessageKey = new AtomicLong(0);
 	private Properties props;
@@ -39,8 +40,16 @@ public class GenericKafkaProducer implements IKafkaProducer {
 
 	@Override
 	public void connect() {
-		producer = new KafkaProducer<>(props);
+		producer = new KafkaProducer<String, String>(props);
+		//		producerBatcher = new KafkaProducer<String[], String[]>(props);
 	}
+
+	//	public void send(String[] keys, String[] messages) {
+	//		if (producerBatcher == null) {
+	//			connect();
+	//		}
+	//		producerBatcher.send(new ProducerRecord<String[], String[]>(topicnames, keys, messages));
+	//	}
 
 	@Override
 	public void send(String message) {
@@ -68,8 +77,10 @@ public class GenericKafkaProducer implements IKafkaProducer {
 	private void productFromFile() {
 		String filePath = props.getProperty("filePath");
 		String fileNameReg = props.getProperty("fileNameReg");
-		//System.out.println("filePath=" + filePath);
-		//System.out.println("fileNameReg=" + fileNameReg);
+		String fileBakPath = props.getProperty("bakPath");
+		if (!fileBakPath.endsWith(File.separator)) {
+			fileBakPath += File.separator;
+		}
 
 		List<File> allFiles = new ArrayList<>();
 		List<File> files = FileUtil.getFiles(filePath);
@@ -87,17 +98,58 @@ public class GenericKafkaProducer implements IKafkaProducer {
 
 				String line = null;
 				while ((line = bufferedReader.readLine()) != null) {
-					//					System.out.println(line);
-					send(line);
 					totalCount++;
+					send(line);
 				}
 			} catch (Exception e) {
 				LOGGER.error("Process file=[" + f.getAbsolutePath() + "] error!", e);
 				throw new RuntimeException(e);
 			}
 			System.out.println(f.getAbsolutePath() + ": send to kafka count:" + totalCount);
+			if (f.renameTo(new File(fileBakPath + f.getName()))) {
+				LOGGER.debug("File:[" + f.getAbsolutePath() + "] backup to [" + fileBakPath + "] success.");
+			} else {
+				LOGGER.error("File:[" + f.getAbsolutePath() + "] backup to [" + fileBakPath + "] failure.");
+				throw new RuntimeException("Rename file to sendbak dirctory failure!");
+			}
 		}
 	}
+
+	//	private void batcherProductFromFile() {
+	//		String filePath = props.getProperty("filePath");
+	//		String fileNameReg = props.getProperty("fileNameReg");
+	//
+	//		List<File> allFiles = new ArrayList<>();
+	//		List<File> files = FileUtil.getFiles(filePath);
+	//		for (File file : files) {
+	//			if (file.getName().matches(fileNameReg)) {
+	//				allFiles.add(file);
+	//			}
+	//		}
+	//
+	//		int totalCount = 0;
+	//		for (File f : allFiles) {
+	//			totalCount = 0;
+	//			List<String> keyList = new ArrayList<>();
+	//			List<String> messageList = new ArrayList<>();
+	//			//String[] array = (String[]) keys.toArray();
+	//			try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(f)); // , "GB2312"
+	//					BufferedReader bufferedReader = new BufferedReader(fileReader);) {
+	//
+	//				String line = null;
+	//				while ((line = bufferedReader.readLine()) != null) {
+	//					totalCount++;
+	//					keyList.add(Long.toString(lMessageKey.incrementAndGet()));
+	//					messageList.add(line);
+	//					send(CollectionUtil.toArray(keyList), CollectionUtil.toArray(messageList));
+	//				}
+	//			} catch (Exception e) {
+	//				LOGGER.error("Process file=[" + f.getAbsolutePath() + "] error!", e);
+	//				throw new RuntimeException(e);
+	//			}
+	//			System.out.println(f.getAbsolutePath() + ": send to kafka count:" + totalCount);
+	//		}
+	//	}
 
 	@Override
 	public void disConnect() {
@@ -110,6 +162,7 @@ public class GenericKafkaProducer implements IKafkaProducer {
 	@Override
 	public void start() {
 		productFromFile();
+		//		batcherProductFromFile();
 	}
 
 }

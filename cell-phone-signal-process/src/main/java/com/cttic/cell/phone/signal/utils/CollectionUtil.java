@@ -1,13 +1,14 @@
 package com.cttic.cell.phone.signal.utils;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
 /**
- * 集合工具�?
+ * 集合工具�?
  * 
  * @author liugw
  *
@@ -25,7 +26,7 @@ public final class CollectionUtil {
 	}
 
 	/**
-	 * 判读Collection是否为非�?
+	 * 判读Collection是否为非�?
 	 * 
 	 * @param collection
 	 * @return
@@ -45,12 +46,18 @@ public final class CollectionUtil {
 	}
 
 	/**
-	 * 判读Map是否为非�?
+	 * 判读Map是否为非�?
 	 * 
 	 * @param map
 	 * @return
 	 */
 	public static boolean isNotEmpty(Map<?, ?> map) {
 		return !isEmpty(map);
+	}
+
+	public static String[] toArray(List<String> list) {
+		String[] ts = new String[list.size()];
+		list.toArray(ts);
+		return ts;
 	}
 }

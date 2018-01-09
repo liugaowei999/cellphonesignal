@@ -103,6 +103,7 @@ public class LoadConfigure {
 		// 源文件信息
 		kafkaProps.setProperty("filePath", reader.getValue("KAFKA", "filePath").trim());
 		kafkaProps.setProperty("fileNameReg", reader.getValue("KAFKA", "fileNameReg").trim());
+		kafkaProps.setProperty("bakPath", reader.getValue("KAFKA", "bakPath").trim());
 	}
 
 	/**
