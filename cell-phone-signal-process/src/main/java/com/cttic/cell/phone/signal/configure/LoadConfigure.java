@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
 
@@ -48,6 +50,9 @@ public class LoadConfigure {
 	// 任务配置域名称正则表达式
 	private static final String TASK_SECTION_NAME_REG = "^TASK_.*";
 
+	// Kafka 相关的参数配置
+	private Properties kafkaProps = new Properties();
+
 	//单例
 	private static LoadConfigure instance;
 
@@ -74,6 +79,7 @@ public class LoadConfigure {
 		setCompress(CastUtil
 				.castBoolean(CastUtil.castInt(reader.getValue("BACKUP", "bakpath").trim()) > 0 ? "true" : "false"));
 
+		// 加载文件读取的任务列表
 		List<String> sections = reader.getSectionList(TASK_SECTION_NAME_REG);
 		for (String section : sections) {
 			String recordType = reader.getValue(section, "recordType").trim();
@@ -83,6 +89,32 @@ public class LoadConfigure {
 			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, orderFieldIndex, recordType);
 			taskList.add(taskInfo);
 		}
+
+		// 加载kafka相关的配置项
+		kafkaProps.setProperty("bootstrap.servers", reader.getValue("KAFKA", "bootstrap.servers").trim());
+		kafkaProps.setProperty("acks", reader.getValue("KAFKA", "acks").trim());
+		kafkaProps.setProperty("retries", reader.getValue("KAFKA", "retries").trim());
+		kafkaProps.setProperty("batch.size", reader.getValue("KAFKA", "batch.size").trim());
+		kafkaProps.setProperty("linger.ms", reader.getValue("KAFKA", "linger.ms").trim());
+		kafkaProps.setProperty("buffer.memory", reader.getValue("KAFKA", "buffer.memory").trim());
+		kafkaProps.setProperty("key.serializer", reader.getValue("KAFKA", "key.serializer").trim());
+		kafkaProps.setProperty("value.serializer", reader.getValue("KAFKA", "value.serializer").trim());
+		kafkaProps.setProperty("topicName", reader.getValue("KAFKA", "topicName").trim());
+		// 源文件信息
+		kafkaProps.setProperty("filePath", reader.getValue("KAFKA", "filePath").trim());
+		kafkaProps.setProperty("fileNameReg", reader.getValue("KAFKA", "fileNameReg").trim());
+	}
+
+	/**
+	 * 获取配置信息中的 Kafka相关的配置属性
+	 * 
+	 */
+	public Properties getKafkaProps() {
+		Properties cpKafkaProps = new Properties();
+		for (Entry<Object, Object> entry : kafkaProps.entrySet()) {
+			cpKafkaProps.setProperty((String) entry.getKey(), (String) entry.getValue());
+		}
+		return cpKafkaProps;
 	}
 
 	public static LoadConfigure getInstance(String fileName) throws IOException {

@@ -61,7 +61,8 @@ public class IniReader {
 	}
 
 	/** 
-	 * 获取值 
+	 * 获取值 , 如果不存在则异常退出
+	 * 
 	 * @param section 
 	 * @param name 
 	 * @return 
@@ -69,10 +70,39 @@ public class IniReader {
 	public String getValue(String section, String name) {
 		Properties p = (Properties) sections.get(section);
 		if (p == null) {
+			throw new RuntimeException("[" + section + "] is missing!");
+		}
+
+		String value = p.getProperty(name);
+		if (value == null) {
+			throw new RuntimeException("[" + section + "] element: <" + name + "> is missing!");
+		}
+		return value;
+	}
+
+	/** 
+	 * 获取值 , 如果不存在则返回null
+	 * 
+	 * @param section 
+	 * @param name 
+	 * @return 
+	 */
+	public String getValue(String section, String name, boolean isMust) {
+		Properties p = (Properties) sections.get(section);
+		if (p == null) {
+			if (isMust) {
+				throw new RuntimeException("[" + section + "] element: <" + name + "> is missing!");
+			}
+
 			return null;
 		}
 
 		String value = p.getProperty(name);
+		if (value == null) {
+			if (isMust) {
+				throw new RuntimeException("[" + section + "] element: <" + name + "> is missing!");
+			}
+		}
 		return value;
 	}
 

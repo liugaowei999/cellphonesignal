@@ -46,9 +46,6 @@ public class DataConvertTask implements Runnable {
 		this.taskInfos = taskInfos;
 	}
 
-
-
-
 	/**
 	 * 获取一个文件夹以及其子文件夹下的所有的文件
 	 */
@@ -127,6 +124,7 @@ public class DataConvertTask implements Runnable {
 					LOGGER.debug("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] success.");
 				} else {
 					LOGGER.error("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] failure.");
+					throw new RuntimeException("Rename file to bak dirctory failure!");
 				}
 				if (!configure.isCompress()) {
 					System.out.println("compress ........");
@@ -156,7 +154,7 @@ public class DataConvertTask implements Runnable {
 			}
 		});
 
-		System.out.println("============================= 排序后：");
+		//System.out.println("============================= 排序后：");
 		FileWriter fw = null;
 		String fileNameBody = Thread.currentThread().getId() + "_" + System.currentTimeMillis();
 		String tmpFilePath = configure.getTmpPath() + configure.getTmpFilePre() + fileNameBody
@@ -167,7 +165,7 @@ public class DataConvertTask implements Runnable {
 			fw = new FileWriter(tmpFilePath);
 		}
 		for (Entry<Long, CellPhoneSignalList> entry : infoIds) {
-			System.out.println(entry.getKey());
+			//System.out.println(entry.getKey());
 			CellPhoneSignalList recordList = entry.getValue();
 			recordList.writeToFile(fw);
 		}
@@ -175,7 +173,7 @@ public class DataConvertTask implements Runnable {
 		fw.close();
 
 		// 移到正式目录下
-		System.out.println("rename to out path");
+		// System.out.println("rename to out path");
 		File file = new File(tmpFilePath);
 		if (file.renameTo(new File(outputFilePath))) {
 			LOGGER.debug("File:[" + tmpFilePath + "] rename to [" + outputFilePath + "] success.");
@@ -247,7 +245,7 @@ public class DataConvertTask implements Runnable {
 		// YYMMDD + HH + MI
 		String partition = timeStr.substring(2, 8) + timeStr.substring(9, 11) + timeStr.substring(12, 14);
 		String value = timeStr.substring(15, 17) + timeStr.substring(18, 21);
-		System.out.println("partition=" + partition + ", value=" + value);
+		//System.out.println("partition=" + partition + ", value=" + value);
 		return new String[] { partition, value };
 	}
 
