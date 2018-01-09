@@ -68,8 +68,8 @@ public class GenericKafkaProducer implements IKafkaProducer {
 	private void productFromFile() {
 		String filePath = props.getProperty("filePath");
 		String fileNameReg = props.getProperty("fileNameReg");
-		System.out.println("filePath=" + filePath);
-		System.out.println("fileNameReg=" + fileNameReg);
+		//System.out.println("filePath=" + filePath);
+		//System.out.println("fileNameReg=" + fileNameReg);
 
 		List<File> allFiles = new ArrayList<>();
 		List<File> files = FileUtil.getFiles(filePath);
