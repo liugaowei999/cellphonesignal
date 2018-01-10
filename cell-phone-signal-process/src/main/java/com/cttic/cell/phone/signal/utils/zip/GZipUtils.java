@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.cttic.cell.phone.signal.utils.GzipException;
+
 /**
  * GZIP工具
  * 
@@ -61,20 +63,31 @@ public abstract class GZipUtils {
 	 * @param file
 	 * @param delete
 	 *            是否删除原始文件
+	 * @throws GzipException 
 	 * @throws Exception
 	 */
-	public static void compress(File file, boolean delete) throws Exception {
-		FileInputStream fis = new FileInputStream(file);
-		FileOutputStream fos = new FileOutputStream(file.getPath() + EXT);
+	public static void compress(File file, boolean delete) throws GzipException {
+		FileInputStream fis;
+		try {
+			fis = new FileInputStream(file);
+			String gzipFileName = file.getPath() + EXT;
+			if (new File(gzipFileName).exists()) {
+				gzipFileName = file.getPath() + "." + System.currentTimeMillis() + EXT;
+			}
+			FileOutputStream fos = new FileOutputStream(gzipFileName);
 
-		compress(fis, fos);
+			compress(fis, fos);
 
-		fis.close();
-		fos.flush();
-		fos.close();
+			fis.close();
+			fos.flush();
+			fos.close();
 
-		if (delete) {
-			file.delete();
+			if (delete) {
+				file.delete();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			throw new GzipException("Compress file error.", e);
 		}
 	}
 
@@ -142,7 +155,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 数据解压�?
+	 * 数据解压�?
 	 * 
 	 * @param data
 	 * @return
@@ -152,7 +165,7 @@ public abstract class GZipUtils {
 		ByteArrayInputStream bais = new ByteArrayInputStream(data);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-		// 解压�?
+		// 解压�?
 
 		decompress(bais, baos);
 
@@ -167,7 +180,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 文件解压�?
+	 * 文件解压�?
 	 * 
 	 * @param file
 	 * @throws Exception
@@ -177,7 +190,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 文件解压�?
+	 * 文件解压�?
 	 * 
 	 * @param file
 	 * @param delete
@@ -198,7 +211,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 文件解压�?
+	 * 文件解压�?
 	 * 
 	 * @param file
 	 * @param delete
@@ -215,7 +228,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 数据解压�?
+	 * 数据解压�?
 	 * 
 	 * @param is
 	 * @param os
@@ -235,7 +248,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 文件解压�?
+	 * 文件解压�?
 	 * 
 	 * @param path
 	 * @throws Exception
@@ -245,7 +258,7 @@ public abstract class GZipUtils {
 	}
 
 	/**
-	 * 文件解压�?
+	 * 文件解压�?
 	 * 
 	 * @param path
 	 * @param delete

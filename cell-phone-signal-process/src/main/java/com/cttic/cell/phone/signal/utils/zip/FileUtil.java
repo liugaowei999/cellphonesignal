@@ -20,7 +20,7 @@ public class FileUtil {
 	 * @throws
 	 */
 	public static File compress(File source) {
-		File target = new File(source.getName() + ".gz");
+		File target = new File(source.getAbsoluteFile() + ".gz");
 		FileInputStream in = null;
 		GZIPOutputStream out = null;
 		try {
@@ -76,5 +76,13 @@ public class FileUtil {
 			}
 		}
 		return files;
+	}
+
+	public static boolean rename(File ori, File dest) {
+		File destF = dest;
+		if (dest.exists()) {
+			destF = new File(dest.getPath() + "." + System.currentTimeMillis());
+		}
+		return ori.renameTo(destF);
 	}
 }

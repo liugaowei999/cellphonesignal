@@ -64,8 +64,8 @@ public class LoadConfigure {
 	private void init() throws IOException {
 		IniReader reader = new IniReader(configFileFullPath);
 		//		backlog = Integer.parseInt(reader.getValue("HTTPSERVER", "backlog").trim());
-		String loggerPath = reader.getValue("LOGGER", "logPath").trim();
-		System.out.println("loggerPath=" + loggerPath);
+		//		String loggerPath = reader.getValue("LOGGER", "logPath").trim();
+		//		System.out.println("loggerPath=" + loggerPath);
 
 		setOutPutPath(reader.getValue("OUTPUT", "outputpath").trim());
 		setOutputFilePre(reader.getValue("OUTPUT", "outputFilePre").trim());
@@ -76,8 +76,7 @@ public class LoadConfigure {
 		setTmpFileSub(reader.getValue("TMP", "tmpFileSub").trim());
 
 		setBakPath(reader.getValue("BACKUP", "bakpath").trim());
-		setCompress(CastUtil
-				.castBoolean(CastUtil.castInt(reader.getValue("BACKUP", "bakpath").trim()) > 0 ? "true" : "false"));
+		setCompress(CastUtil.castBoolean(reader.getValue("BACKUP", "compress").trim()));
 
 		// 加载文件读取的任务列表
 		List<String> sections = reader.getSectionList(TASK_SECTION_NAME_REG);
@@ -104,6 +103,7 @@ public class LoadConfigure {
 		kafkaProps.setProperty("filePath", reader.getValue("KAFKA", "filePath").trim());
 		kafkaProps.setProperty("fileNameReg", reader.getValue("KAFKA", "fileNameReg").trim());
 		kafkaProps.setProperty("bakPath", reader.getValue("KAFKA", "bakPath").trim());
+		kafkaProps.setProperty("bakFileCompress", reader.getValue("KAFKA", "bakFileCompress").trim());
 	}
 
 	/**

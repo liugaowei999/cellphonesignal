@@ -24,7 +24,9 @@ import com.cttic.cell.phone.signal.pojo.CellPhoneSignalList;
 import com.cttic.cell.phone.signal.pojo.TaskInfo;
 import com.cttic.cell.phone.signal.utils.CastUtil;
 import com.cttic.cell.phone.signal.utils.CollectionUtil;
+import com.cttic.cell.phone.signal.utils.GzipException;
 import com.cttic.cell.phone.signal.utils.zip.FileUtil;
+import com.cttic.cell.phone.signal.utils.zip.GZipUtils;
 
 public class DataConvertTask implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataConvertTask.class);
@@ -72,16 +74,16 @@ public class DataConvertTask implements Runnable {
 			LOGGER.error("Configure error : [fileMatcher]", e);
 			throw new RuntimeException(e);
 		}
-		LOGGER.info("Fetched file count:" + fileCount);
+		LOGGER.debug("Fetched file count:" + fileCount);
 		return allFiles;
 	}
 
 	@Override
 	public void run() {
 		isStop = false;
-		System.out.println("Thread will start .... ");
-		while (Thread.currentThread().isInterrupted() || !isStop) {
-			System.out.println("Thread start , processing ........ ");
+		//System.out.println("Thread will start .... ");
+		while (!isStop && !Thread.currentThread().isInterrupted()) {
+			//System.out.println("Thread start , processing ........ ");
 
 			//第一步：获取一个文件夹下的所有的文件
 			Map<TaskInfo, List<File>> allFiles = getAllFiles();
@@ -97,11 +99,13 @@ public class DataConvertTask implements Runnable {
 				// 写出当前批次的所有记录 并 排序
 				try {
 					writeRecordsToFile(recordMap);
+					backupAllFiles(allFiles);
 				} catch (IOException e) {
 					LOGGER.error("write the records to the file failure!", e);
 					isStop = true;
+				} catch (GzipException e) {
+					LOGGER.error("Gzip the bakcup file failure!", e);
 				}
-				backupAllFiles(allFiles);
 			}
 
 			try {
@@ -109,26 +113,27 @@ public class DataConvertTask implements Runnable {
 			} catch (InterruptedException e) {
 				isStop = true;
 				Thread.currentThread().interrupt();
-				break;
+				//break;
 			}
 		}
 	}
 
-	private void backupAllFiles(Map<TaskInfo, List<File>> allFiles) {
+	private void backupAllFiles(Map<TaskInfo, List<File>> allFiles) throws GzipException {
 		// 遍历所有文件列表
 		for (Map.Entry<TaskInfo, List<File>> entry : allFiles.entrySet()) {
 			List<File> value = entry.getValue();
 			for (File file : value) {
 				String bakfilepath = configure.getBakPath() + file.getName();
-				if (file.renameTo(new File(bakfilepath))) {
+				if (FileUtil.rename(file, new File(bakfilepath))) {
 					LOGGER.debug("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] success.");
 				} else {
 					LOGGER.error("File:[" + file.getAbsolutePath() + "] backup to [" + bakfilepath + "] failure.");
 					throw new RuntimeException("Rename file to bak dirctory failure!");
 				}
-				if (!configure.isCompress()) {
-					System.out.println("compress ........");
-					FileUtil.compress(new File(bakfilepath));
+				if (configure.isCompress()) {
+					//System.out.println("compress ........");
+					// 压缩并删除原始文件
+					GZipUtils.compress(new File(bakfilepath), true);
 				}
 			}
 		}
@@ -175,7 +180,7 @@ public class DataConvertTask implements Runnable {
 		// 移到正式目录下
 		// System.out.println("rename to out path");
 		File file = new File(tmpFilePath);
-		if (file.renameTo(new File(outputFilePath))) {
+		if (FileUtil.rename(file, new File(outputFilePath))) {
 			LOGGER.debug("File:[" + tmpFilePath + "] rename to [" + outputFilePath + "] success.");
 		} else {
 			LOGGER.error("File:[" + tmpFilePath + "] rename to [" + outputFilePath + "] failure.");
