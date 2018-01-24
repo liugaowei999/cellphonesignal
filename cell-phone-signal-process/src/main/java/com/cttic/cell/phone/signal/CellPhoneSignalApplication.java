@@ -5,11 +5,13 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cttic.cell.phone.signal.configure.LoadBaseStationInfo;
 import com.cttic.cell.phone.signal.configure.LoadConfigure;
 import com.cttic.cell.phone.signal.kafka.GenericKafkaProducer;
 import com.cttic.cell.phone.signal.kafka.IKafkaProducer;
 import com.cttic.cell.phone.signal.tasks.DataConvertTask;
 import com.cttic.cell.phone.signal.tasks.DataSendTask;
+import com.cttic.cell.phone.signal.utils.DatabaseHelper;
 
 public class CellPhoneSignalApplication {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CellPhoneSignalApplication.class);
@@ -19,6 +21,11 @@ public class CellPhoneSignalApplication {
 		try {
 			// 加载配置文件
 			LoadConfigure configure = LoadConfigure.getInstance(DEFAULT_CONFIG);
+
+			// 初始化数据库
+			DatabaseHelper.init(configure.getDRIVER(), configure.getURL(), configure.getUSERNAME(),
+					configure.getPASSWORD());
+			LoadBaseStationInfo.load();
 
 			// 启动文件预处理任务
 			Thread dataTask = new Thread(new DataConvertTask(configure), "DataConvertTask-Thread");

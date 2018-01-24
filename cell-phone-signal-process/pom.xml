@@ -4,6 +4,24 @@
   <artifactId>cell-phone-signal-process</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   
+  <!-- 设定主仓库，按设定顺序进行查找。 -->
+	<repositories>
+		<repository>
+			<id>jjht</id>
+			<name>JJHT Maven Repository</name>
+			<url>http://192.168.1.28:8081/nexus/content/groups/public/</url>
+		</repository>
+	</repositories>
+
+	<!-- 设定插件仓库 -->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jjhtplug</id>
+			<name>JJHT Maven Repository</name>
+			<url>http://192.168.1.28:8081/nexus/content/groups/public/</url>
+		</pluginRepository>
+	</pluginRepositories>
+  
   <dependencies>
 	  	<dependency>
 	      <groupId>junit</groupId>
@@ -54,6 +72,35 @@
 	        <artifactId>kafka-clients</artifactId>
 	        <version>0.10.1.0</version>
 	    </dependency>
+	    
+	    <!-- https://mvnrepository.com/artifact/net.sourceforge.jexcelapi/jxl -->
+		<dependency>
+		    <groupId>net.sourceforge.jexcelapi</groupId>
+		    <artifactId>jxl</artifactId>
+		    <version>2.6.12</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/commons-dbutils/commons-dbutils -->
+		<dependency>
+		    <groupId>commons-dbutils</groupId>
+		    <artifactId>commons-dbutils</artifactId>
+		    <version>1.6</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-dbcp2 -->
+		<dependency>
+		    <groupId>org.apache.commons</groupId>
+		    <artifactId>commons-dbcp2</artifactId>
+		    <version>2.1.1</version>
+		</dependency>
+		
+		<!-- jdbc driver -->
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>11.2.0.4</version>
+			<scope>runtime</scope>
+		</dependency>
   </dependencies>
 
 	<build>  

@@ -6,9 +6,12 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,18 +21,25 @@ import java.util.regex.PatternSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.cttic.cell.phone.signal.condition.ICondition;
+import com.cttic.cell.phone.signal.configure.LoadBaseStationInfo;
 import com.cttic.cell.phone.signal.configure.LoadConfigure;
+import com.cttic.cell.phone.signal.pojo.BaseStationInfo;
 import com.cttic.cell.phone.signal.pojo.CellPhoneSignal;
 import com.cttic.cell.phone.signal.pojo.CellPhoneSignalList;
 import com.cttic.cell.phone.signal.pojo.TaskInfo;
 import com.cttic.cell.phone.signal.utils.CastUtil;
 import com.cttic.cell.phone.signal.utils.CollectionUtil;
 import com.cttic.cell.phone.signal.utils.GzipException;
+import com.cttic.cell.phone.signal.utils.StringUtil;
 import com.cttic.cell.phone.signal.utils.zip.FileUtil;
 import com.cttic.cell.phone.signal.utils.zip.GZipUtils;
 
 public class DataConvertTask implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataConvertTask.class);
+
+	private static final String RECORD = "RECORD";
+	private static final String ORDERVALUES = "ORDERVALUES";
 
 	// 配置信息
 	LoadConfigure configure;
@@ -206,18 +216,167 @@ public class DataConvertTask implements Runnable {
 	 * @param f
 	 */
 	private void processFile(TaskInfo taskInfo, File f) {
-		short sortFieldIndex = (short) (taskInfo.getOrderFieldIndex() - 1);
 		try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(f)); // , "GB2312"
 				BufferedReader bufferedReader = new BufferedReader(fileReader);) {
 
 			String line = null;
 			while ((line = bufferedReader.readLine()) != null) {
-				String[] sortValues = formatTimeStr(line.split(",")[sortFieldIndex]);
-				intsertToContainer(sortValues, taskInfo.getRecordType() + "," + line);
+				Map<String, String[]> outputRecMap = getOutputRecord(taskInfo, line);
+				if (CollectionUtil.isNotEmpty(outputRecMap)) {
+					if (StringUtil.isNotEmpty(outputRecMap.get(RECORD)[0])) {
+						intsertToContainer(outputRecMap.get(ORDERVALUES), outputRecMap.get(RECORD)[0]);
+					}
+				}
+
 			}
 		} catch (Exception e) {
 			LOGGER.error("Process file=[" + f.getAbsolutePath() + "] error!", e);
 			throw new RuntimeException(e);
+		}
+	}
+
+	private Map<String, String[]> getOutputRecord(TaskInfo taskInfo, String line) {
+		Map<String, String[]> returnMap = new HashMap<String, String[]>();
+		String oriTime1 = null, oriTime2 = null, orderTime = null;
+		// 当前任务最终要输出的条件记录格式配置
+		Map<ICondition, String[]> outPutFiledsConditionMap = taskInfo.getOutPutFiledsConditionMap();
+		// 原始记录字段列表配置
+		Map<String, Integer> filedIndexMap = taskInfo.getFiledIndexMap();
+		// 保存原始记录字段名称和字段值的key-value列表
+		Map<String, String> fieldValueMap = new HashMap<String, String>();
+		String[] oriRec = line.split(",");
+
+		for (Map.Entry<String, Integer> entry : filedIndexMap.entrySet()) {
+			String fieldName = entry.getKey();
+			int filedIndex = entry.getValue();
+			String fieldValue = oriRec[filedIndex - 1];
+			if (fieldName.equalsIgnoreCase("time1")) {
+				oriTime1 = fieldValue;
+			}
+			if (fieldName.equalsIgnoreCase("time2")) {
+				oriTime2 = fieldValue;
+			}
+
+			if (fieldName.equalsIgnoreCase("time1") || fieldName.equalsIgnoreCase("time2")) {
+				fieldValue = formatTime(taskInfo, oriRec[filedIndex - 1]);
+				if (StringUtil.isEmpty(fieldValue)) {
+					LOGGER.debug("Time format is error! record=[" + line + "]");
+					return returnMap;
+				}
+			}
+
+			fieldValueMap.put("{" + fieldName + "}", fieldValue);
+		}
+
+		// 从原始字段中获取cid, lac, cType, callType信息，保存在fieldValueMap中
+		String cid, lac, cType, callType;
+		cid = fieldValueMap.get("{cid}");
+		lac = fieldValueMap.get("{lac}");
+		cType = fieldValueMap.get("{ctype}");
+		callType = fieldValueMap.get("{calltype}");
+		if (cType.equalsIgnoreCase("111")) {
+			cType = "2"; // 2G
+		} else {
+			cType = "4"; // 4G
+		}
+
+		// 获取经纬度位置信息，保存到fieldValueMap中
+		BaseStationInfo stationInfo = LoadBaseStationInfo.find(cid, lac, cType);
+		if (stationInfo == null) {
+			LOGGER.debug("Get Lon,Lat failed! record=[" + line + "], cid=" + cid + ", lac=" + lac + ",cType=" + cType);
+			return returnMap;
+		}
+		fieldValueMap.put("{LON}", stationInfo.getLongitude());
+		fieldValueMap.put("{LAT}", stationInfo.getLatitude());
+
+		StringBuilder stringBuilder = new StringBuilder();
+
+		String[] outPutFiledsIndexArray = null;
+		// 进行条件判断， 确定最终输出的记录格式
+		for (Map.Entry<ICondition, String[]> entry : outPutFiledsConditionMap.entrySet()) {
+			ICondition condition = entry.getKey();
+			if (condition.isReady()) {
+				if (condition.getResult()) {
+					outPutFiledsIndexArray = entry.getValue();
+					break;
+				}
+			} else {
+				String filedName = condition.getLeftKey();
+				if (fieldValueMap.containsKey(filedName)) {
+					condition.setFirstValue(fieldValueMap.get(filedName));
+				}
+
+				filedName = condition.getRightKey();
+				if (fieldValueMap.containsKey(filedName)) {
+					condition.setSecondValue(fieldValueMap.get(filedName));
+				}
+				if (condition.getResult()) {
+					outPutFiledsIndexArray = entry.getValue();
+					break;
+				}
+			}
+		}
+
+		if (outPutFiledsIndexArray == null) {
+			LOGGER.debug("No matched output format rule! record=[" + line + "], cid=" + cid + ", lac=" + lac + ",cType="
+					+ cType + ",callType=" + callType);
+			return returnMap;
+		}
+
+		// 生成要输出的记录内容，保存到stringBuilder中用于结果返回
+		for (String fieldInfo : outPutFiledsIndexArray) {
+			// 如果第一个时间为空， 则取第二个时间
+			if (fieldInfo.trim().startsWith("{time1}")) {
+				orderTime = oriTime1;
+				if (StringUtil.isEmpty(fieldValueMap.get(fieldInfo))
+						&& StringUtil.isNotEmpty(fieldValueMap.get("{time2}"))) {
+					stringBuilder.append(fieldValueMap.get("{time2}") + taskInfo.getOutSplitChar());
+					orderTime = oriTime2;
+					continue;
+				} else if (StringUtil.isEmpty(fieldValueMap.get("{time2}"))) {
+					LOGGER.debug("Time is empty! record=[" + line + "]");
+					return returnMap;
+				}
+			}
+			// 时间2为空
+			if (fieldInfo.trim().startsWith("{time2}")) {
+				orderTime = oriTime2;
+				if (StringUtil.isEmpty(fieldValueMap.get(fieldInfo))
+						&& StringUtil.isNotEmpty(fieldValueMap.get("{time1}"))) {
+					stringBuilder.append(fieldValueMap.get("{time1}") + taskInfo.getOutSplitChar());
+					orderTime = oriTime1;
+					continue;
+				} else if (StringUtil.isEmpty(fieldValueMap.get("{time1}"))) {
+					LOGGER.debug("Time is empty! record=[" + line + "]");
+					return returnMap;
+				}
+			}
+
+			if (fieldValueMap.containsKey(fieldInfo)) {
+				stringBuilder.append(fieldValueMap.get(fieldInfo) + taskInfo.getOutSplitChar());
+			} else {
+				stringBuilder.append(taskInfo.getOutSplitChar());
+			}
+		}
+		//System.out.println("orderTime=" + orderTime + ", line=" + line);
+		returnMap.put(RECORD, new String[] { stringBuilder.toString() });
+		returnMap.put(ORDERVALUES, formatTimeStr(orderTime));
+		return returnMap;
+	}
+
+	private String formatTime(TaskInfo taskInfo, String oritimestr) {
+		// 当前字段为排序的日期字段，按规定的日期输出格式进行转换
+		String dateFieldInfo = taskInfo.getDateFieldInfo();
+		SimpleDateFormat oriDateFormat = new SimpleDateFormat(dateFieldInfo.split(",")[0]);
+		SimpleDateFormat OutDateFormat = new SimpleDateFormat(dateFieldInfo.split(",")[1]);
+		Date date = null;
+		try {
+
+			date = oriDateFormat.parse(oritimestr);
+			return OutDateFormat.format(date);
+		} catch (ParseException e) {
+			LOGGER.error("Trans date format error!", e);
+			return null;
 		}
 	}
 
@@ -248,9 +407,14 @@ public class DataConvertTask implements Runnable {
 	// 20170719 06:02:23.658
 	private String[] formatTimeStr(String timeStr) {
 		// YYMMDD + HH + MI
-		String partition = timeStr.substring(2, 8) + timeStr.substring(9, 11) + timeStr.substring(12, 14);
-		String value = timeStr.substring(15, 17) + timeStr.substring(18, 21);
-		//System.out.println("partition=" + partition + ", value=" + value);
+		String partition, value;
+		partition = timeStr.substring(2, 8) + timeStr.substring(9, 11) + timeStr.substring(12, 14);
+		value = timeStr.substring(15, 17);
+		if (timeStr.length() >= 21) {
+			value = value + timeStr.substring(18, 21);
+		} else {
+			value = value + "000";
+		}
 		return new String[] { partition, value };
 	}
 

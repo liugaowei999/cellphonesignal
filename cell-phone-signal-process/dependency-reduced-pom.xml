@@ -27,6 +27,20 @@
       </plugin>
     </plugins>
   </build>
+  <repositories>
+    <repository>
+      <id>jjht</id>
+      <name>JJHT Maven Repository</name>
+      <url>http://192.168.1.28:8081/nexus/content/groups/public/</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jjhtplug</id>
+      <name>JJHT Maven Repository</name>
+      <url>http://192.168.1.28:8081/nexus/content/groups/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>

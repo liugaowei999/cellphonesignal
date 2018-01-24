@@ -8,12 +8,21 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.cttic.cell.phone.signal.pojo.TaskInfo;
 import com.cttic.cell.phone.signal.utils.CastUtil;
 import com.cttic.cell.phone.signal.utils.IniReader;
 
 public class LoadConfigure {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoadConfigure.class);
+	// 数据库信息
+	private String DRIVER;
+	private String URL;
+	private String USERNAME;
+	private String PASSWORD;
+
 	//backlog
 	private int backlog;
 	//配置文件名
@@ -63,9 +72,11 @@ public class LoadConfigure {
 
 	private void init() throws IOException {
 		IniReader reader = new IniReader(configFileFullPath);
-		//		backlog = Integer.parseInt(reader.getValue("HTTPSERVER", "backlog").trim());
-		//		String loggerPath = reader.getValue("LOGGER", "logPath").trim();
-		//		System.out.println("loggerPath=" + loggerPath);
+
+		DRIVER = reader.getValue("DATABASE", "jdbc.driver").trim();
+		URL = reader.getValue("DATABASE", "jdbc.url").trim();
+		USERNAME = reader.getValue("DATABASE", "jdbc.username").trim();
+		PASSWORD = reader.getValue("DATABASE", "jdbc.password").trim();
 
 		setOutPutPath(reader.getValue("OUTPUT", "outputpath").trim());
 		setOutputFilePre(reader.getValue("OUTPUT", "outputFilePre").trim());
@@ -84,8 +95,20 @@ public class LoadConfigure {
 			String recordType = reader.getValue(section, "recordType").trim();
 			String oriPath = reader.getValue(section, "oripath").trim();
 			String oriFileMatcher = reader.getValue(section, "fileMatcher").trim();
-			short orderFieldIndex = CastUtil.castShort(reader.getValue(section, "orderFieldIndex").trim());
-			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, orderFieldIndex, recordType);
+			String outPutFieldsIndex = reader.getValue(section, "outPutFieldsIndex").trim();
+			String fieldIndexMapStr = reader.getValue(section, "fieldIndexMap").trim();
+			String outSplitChar = reader.getValue(section, "outSplitChar", ",").trim();
+			String dateFieldInfo = reader.getValue(section, "dateFiled").trim();
+			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, recordType);
+			taskInfo.setOutPutFiledsConditionMap(outPutFieldsIndex);
+			taskInfo.setDateFieldInfo(dateFieldInfo);
+			taskInfo.setOutSplitChar(outSplitChar);
+			if (!taskInfo.setFiledIndexMap(fieldIndexMapStr)) {
+				LOGGER.error("[" + section
+						+ "] --- fieldIndexMap configure error! [Invalid number index] or [no <time1>/<time2> field name!]");
+				throw new RuntimeException("[" + section
+						+ "] --- fieldIndexMap configure error! [Invalid number index] or [no <time1>/<time2> field name!]");
+			}
 			taskList.add(taskInfo);
 		}
 
@@ -244,4 +267,21 @@ public class LoadConfigure {
 	public void setCompress(boolean isCompress) {
 		this.isCompress = isCompress;
 	}
+
+	public String getDRIVER() {
+		return DRIVER;
+	}
+
+	public String getURL() {
+		return URL;
+	}
+
+	public String getUSERNAME() {
+		return USERNAME;
+	}
+
+	public String getPASSWORD() {
+		return PASSWORD;
+	}
+
 }

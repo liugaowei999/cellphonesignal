@@ -107,6 +107,26 @@ public class IniReader {
 	}
 
 	/** 
+	 * 获取值 , 如果不存在则返回null
+	 * 
+	 * @param section 
+	 * @param name 
+	 * @return 
+	 */
+	public String getValue(String section, String name, String defaultValue) {
+		Properties p = (Properties) sections.get(section);
+		if (p == null) {
+			return defaultValue;
+		}
+
+		String value = p.getProperty(name);
+		if (value == null) {
+			return defaultValue;
+		}
+		return value;
+	}
+
+	/** 
 	 * 获取section
 	 * @param section 
 	 * @param name 
