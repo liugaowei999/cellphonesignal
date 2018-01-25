@@ -22,6 +22,14 @@ public class TaskInfo {
 		this.recordType = recordType;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("recordType=" + recordType).append(", oriPath=" + oriPath)
+				.append(", dateFieldInfo=" + dateFieldInfo).append(", outSplitChar=" + outSplitChar);
+		return stringBuilder.toString();
+	}
+
 	public String getOriPath() {
 		return oriPath;
 	}

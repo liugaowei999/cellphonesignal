@@ -17,11 +17,17 @@ import com.cttic.cell.phone.signal.utils.IniReader;
 
 public class LoadConfigure {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoadConfigure.class);
+	private static final String CONFIGPATH = "cell.config.path";
 	// 数据库信息
 	private String DRIVER;
 	private String URL;
 	private String USERNAME;
 	private String PASSWORD;
+
+	// 是否进行序列化或者反序列化配置数据
+	private boolean isSerial;
+	// 序列化数据存储的目录
+	private String serialPath;
 
 	//backlog
 	private int backlog;
@@ -78,6 +84,12 @@ public class LoadConfigure {
 		USERNAME = reader.getValue("DATABASE", "jdbc.username").trim();
 		PASSWORD = reader.getValue("DATABASE", "jdbc.password").trim();
 
+		isSerial = CastUtil.castBoolean(reader.getValue("COMMON", "openSerial").trim(), false);
+		serialPath = reader.getValue("COMMON", "serialDataPath", System.getProperty(CONFIGPATH, "")).trim();
+		if (!serialPath.endsWith(File.separator)) {
+			serialPath = serialPath + File.separator;
+		}
+
 		setOutPutPath(reader.getValue("OUTPUT", "outputpath").trim());
 		setOutputFilePre(reader.getValue("OUTPUT", "outputFilePre").trim());
 		setOutputFileSub(reader.getValue("OUTPUT", "outputFileSub").trim());
@@ -92,6 +104,7 @@ public class LoadConfigure {
 		// 加载文件读取的任务列表
 		List<String> sections = reader.getSectionList(TASK_SECTION_NAME_REG);
 		for (String section : sections) {
+			LOGGER.debug("========================Load configure: " + section + " Start =============================");
 			String recordType = reader.getValue(section, "recordType").trim();
 			String oriPath = reader.getValue(section, "oripath").trim();
 			String oriFileMatcher = reader.getValue(section, "fileMatcher").trim();
@@ -109,6 +122,9 @@ public class LoadConfigure {
 				throw new RuntimeException("[" + section
 						+ "] --- fieldIndexMap configure error! [Invalid number index] or [no <time1>/<time2> field name!]");
 			}
+			LOGGER.debug(taskInfo.toString() + ", oriFileMatcher=" + oriFileMatcher + ", outPutFieldsIndex="
+					+ outPutFieldsIndex);
+			LOGGER.debug("========================Load configure: " + section + " End =============================");
 			taskList.add(taskInfo);
 		}
 
@@ -166,7 +182,7 @@ public class LoadConfigure {
 	}
 
 	public static String getConfigPathFile(String fileName) {
-		String configPath = System.getProperty("cell.config.path");
+		String configPath = System.getProperty(CONFIGPATH);
 		boolean initLog4j = false;
 		if (configPath == null) {
 			configPath = LoadConfigure.class.getClassLoader().getResource("").getPath();
@@ -282,6 +298,14 @@ public class LoadConfigure {
 
 	public String getPASSWORD() {
 		return PASSWORD;
+	}
+
+	public boolean isSerial() {
+		return isSerial;
+	}
+
+	public String getSerialPath() {
+		return serialPath;
 	}
 
 }

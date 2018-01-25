@@ -25,7 +25,7 @@ public class CellPhoneSignalApplication {
 			// 初始化数据库
 			DatabaseHelper.init(configure.getDRIVER(), configure.getURL(), configure.getUSERNAME(),
 					configure.getPASSWORD());
-			LoadBaseStationInfo.load();
+			LoadBaseStationInfo.load(configure);
 
 			// 启动文件预处理任务
 			Thread dataTask = new Thread(new DataConvertTask(configure), "DataConvertTask-Thread");
