@@ -12,6 +12,7 @@ public class TaskInfo {
 	private String oriFileMatcher;
 	private String dateFieldInfo;
 	private String recordType;
+	private int maxFileCount;
 	private Map<ICondition, String[]> outPutFiledsConditionMap = new HashMap<>();
 	private String outSplitChar;
 	private Map<String, Integer> filedIndexMap = new HashMap<String, Integer>();
@@ -128,6 +129,14 @@ public class TaskInfo {
 			return false;
 		}
 		return true;
+	}
+
+	public int getMaxFileCount() {
+		return maxFileCount;
+	}
+
+	public void setMaxFileCount(int maxFileCount) {
+		this.maxFileCount = maxFileCount;
 	}
 
 }

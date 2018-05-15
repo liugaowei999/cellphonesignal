@@ -112,10 +112,13 @@ public class LoadConfigure {
 			String fieldIndexMapStr = reader.getValue(section, "fieldIndexMap").trim();
 			String outSplitChar = reader.getValue(section, "outSplitChar", ",").trim();
 			String dateFieldInfo = reader.getValue(section, "dateFiled").trim();
+			int maxFileCount = CastUtil.castInt(reader.getValue(section, "file.max.count").trim(), 10);
+
 			TaskInfo taskInfo = new TaskInfo(oriPath, oriFileMatcher, recordType);
 			taskInfo.setOutPutFiledsConditionMap(outPutFieldsIndex);
 			taskInfo.setDateFieldInfo(dateFieldInfo);
 			taskInfo.setOutSplitChar(outSplitChar);
+			taskInfo.setMaxFileCount(maxFileCount);
 			if (!taskInfo.setFiledIndexMap(fieldIndexMapStr)) {
 				LOGGER.error("[" + section
 						+ "] --- fieldIndexMap configure error! [Invalid number index] or [no <time1>/<time2> field name!]");

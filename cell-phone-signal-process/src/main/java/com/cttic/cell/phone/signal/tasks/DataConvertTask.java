@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.PatternSyntaxException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,19 +64,45 @@ public class DataConvertTask implements Runnable {
 	 */
 	private Map<TaskInfo, List<File>> getAllFiles() {
 		Map<TaskInfo, List<File>> allFiles = new HashMap<>();
-		int fileCount = 0;
+		int fileCount = 0, taskfileCount = 0;
 		try {
 			for (TaskInfo task : taskInfos) {
+				taskfileCount = 0;
 				List<File> files = FileUtil.getFiles(task.getOriPath());
+				// 对文件列表进行排序
+				Collections.sort(files, new Comparator<File>() {
+
+					@Override
+					public int compare(File o1, File o2) {
+						String fileName1 = o1.getName();
+						String fileName2 = o2.getName();
+						String datetime1 = fileName1.substring(fileName1.lastIndexOf("_") + 1,
+								fileName1.lastIndexOf("."));
+						String datetime2 = fileName2.substring(fileName2.lastIndexOf("_") + 1,
+								fileName2.lastIndexOf("."));
+
+						// 如果文件名名中没有日期
+						if (StringUtils.isEmpty(datetime1) || StringUtils.isEmpty(datetime2)) {
+							return o1.lastModified() > o2.lastModified() ? 1 : -1;
+						} else {
+							return datetime1.compareTo(datetime2) > 0 ? 1 : -1;
+						}
+					}
+				});
+
 				for (File f : files) {
 					if (f.getName().matches(task.getOriFileMatcher())) {
 						fileCount++;
+						taskfileCount++;
 						if (allFiles.containsKey(task)) {
 							allFiles.get(task).add(f);
 						} else {
 							List<File> currentTaskFiles = new ArrayList<>();
 							currentTaskFiles.add(f);
 							allFiles.put(task, currentTaskFiles);
+						}
+						if (taskfileCount >= task.getMaxFileCount()) {
+							break;
 						}
 					}
 				}

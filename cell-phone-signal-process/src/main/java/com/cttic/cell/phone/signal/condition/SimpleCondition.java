@@ -1,5 +1,7 @@
 package com.cttic.cell.phone.signal.condition;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 public class SimpleCondition implements ICondition {
 	private String firstValue;
 	private String secondValue;
@@ -92,6 +94,13 @@ public class SimpleCondition implements ICondition {
 		SimpleCondition condition = new SimpleCondition();
 		condition.installCondExpression(conditonStr);
 		//		String[] split = conditonStr.split("}");
+
+		String fileName1 = "TrafRTTE_BJMCC_TD_VOICE_RTT_GY_YCGS6_20170719180100.dat";
+		String fileName2 = "TrafRTTE_BJMCC_TD_VOICE_RTT_GY_YCGS6_20170719180101.dat";
+		String datetime1 = fileName1.substring(fileName1.lastIndexOf("_") + 1, fileName1.lastIndexOf("."));
+		String datetime2 = fileName2.substring(fileName2.lastIndexOf("_") + 1, fileName2.lastIndexOf("."));
+		System.out.println(datetime1.compareTo(datetime2) > 0);
+		System.out.println(NumberUtils.isDigits(datetime1));
 
 	}
 }
