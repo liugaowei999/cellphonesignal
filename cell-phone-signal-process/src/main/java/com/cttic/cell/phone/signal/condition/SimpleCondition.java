@@ -91,7 +91,7 @@ public class SimpleCondition implements ICondition {
 		String conditonStr = "{callType} ==4923";
 		SimpleCondition condition = new SimpleCondition();
 		condition.installCondExpression(conditonStr);
-		String[] split = conditonStr.split(")");
+		//		String[] split = conditonStr.split("}");
 
 	}
 }

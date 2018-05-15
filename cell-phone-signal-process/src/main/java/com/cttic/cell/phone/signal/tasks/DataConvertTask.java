@@ -323,6 +323,7 @@ public class DataConvertTask implements Runnable {
 			return returnMap;
 		}
 
+		boolean isFirst = true;
 		// 生成要输出的记录内容，保存到stringBuilder中用于结果返回
 		for (String fieldInfo : outPutFiledsIndexArray) {
 			// 如果第一个时间为空， 则取第二个时间
@@ -353,10 +354,30 @@ public class DataConvertTask implements Runnable {
 			}
 
 			if (fieldValueMap.containsKey(fieldInfo)) {
-				stringBuilder.append(fieldValueMap.get(fieldInfo) + taskInfo.getOutSplitChar());
+				if (isFirst) {
+					// 过滤掉imsi为0的记录
+					if (fieldInfo.trim().toLowerCase().contains("imsi")) {
+						if (fieldValueMap.get(fieldInfo).startsWith("0000000000")) {
+							LOGGER.debug("imsi is invalid! record=[" + line + "]");
+							return returnMap;
+						}
+					}
+					stringBuilder.append(fieldValueMap.get(fieldInfo));
+				} else {
+					stringBuilder.append(taskInfo.getOutSplitChar() + fieldValueMap.get(fieldInfo));
+				}
+
 			} else {
-				stringBuilder.append(taskInfo.getOutSplitChar());
+				if (!isFirst) {
+					stringBuilder.append(taskInfo.getOutSplitChar());
+				} else {
+					LOGGER.debug("imsi is empty! record=[" + line + "]");
+					return returnMap;
+				}
 			}
+
+			isFirst = false;
+
 		}
 		//System.out.println("orderTime=" + orderTime + ", line=" + line);
 		returnMap.put(RECORD, new String[] { stringBuilder.toString() });
